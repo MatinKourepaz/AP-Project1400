@@ -3,7 +3,15 @@ import sys
 import threading
 import random
 from PyQt5 import uic
-from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QLineEdit
+from PyQt5.QtWidgets import (
+    QApplication,
+    QMainWindow,
+    QPushButton,
+    QLabel,
+    QLineEdit,
+    QRadioButton,
+)
+from numpy import record
 
 Form = uic.loadUiType(os.path.join(os.getcwd(), "Form.ui"))[0]
 
@@ -27,6 +35,7 @@ class MainWindow(QMainWindow, Form):
         self.check_button: QPushButton = self.check_button
         self.warning_label: QLabel = self.warning_label
         self.guess_number: QLabel = self.guess_number
+        self.record_label: QLabel = self.record_label
 
         self.start_button.clicked.connect(self.GameStart)
         self.reset_button.clicked.connect(self.GameReset)
@@ -38,7 +47,9 @@ class MainWindow(QMainWindow, Form):
         self.generated_number = number_generator()
         self.number_of_try = 0
         self.guess_number.setText("0")
+        self.record = 0
         print("Game is started!")
+        print(self.generated_number)
 
     def GameReset(self):
         self.result_label.setText("XXXX")
@@ -48,20 +59,27 @@ class MainWindow(QMainWindow, Form):
         self.guess_number.setText("0")
 
     def CheckGuess(self):
-        thread1 = GameThread(self.generated_number,self.user_guess.text(),self.result_label)
+        thread1 = GameThread(
+            self.generated_number, self.user_guess.text(), self.result_label
+        )
         thread1.start()
         self.number_of_try += 1
         self.guess_number.setText(str(self.number_of_try))
-        
+        if self.generated_number == int(self.user_guess.text()) and self.record == 0:
+            self.record = self.number_of_try
+        if self.generated_number == int(self.user_guess.text()) and self.record != 0:
+            self.record = min(self.record, self.number_of_try)
+            self.record_label.setText(str(self.record))
 
     def LimitsWarning(self):
         if self.user_guess.text() == "":
             pass
         elif int(self.user_guess.text()) < 1000 or int(self.user_guess.text()) > 9999:
-            self.warning_label.setText("Your Guess is out of Range! Guess between 1000 ad 9999")
+            self.warning_label.setText(
+                "Your Guess is out of Range! Guess between 1000 ad 9999"
+            )
         else:
-            self.warning_label.setText("")   
-
+            self.warning_label.setText("")
 
 
 class GameThread(threading.Thread):
@@ -72,8 +90,8 @@ class GameThread(threading.Thread):
         self.result_label = result_label
 
     def run(self):
-        digits = [False,False,False,False]
-        text = ["","","",""]
+        digits = [False, False, False, False]
+        text = ["", "", "", ""]
         for i in range(4):
             if self.generated_number[i] == self.guessed_number[i]:
                 digits[i] = True
@@ -82,9 +100,8 @@ class GameThread(threading.Thread):
                 text[i] = self.generated_number[i]
             else:
                 text[i] = "X"
-        self.result_label.setText(text[0] + text[1] + text[2] + text[3])        
+        self.result_label.setText(text[0] + text[1] + text[2] + text[3])
 
-                
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
